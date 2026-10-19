@@ -5,11 +5,9 @@ declare(strict_types=1);
 namespace App\Console\Commands;
 
 use App\Enums\OrderStatus;
-use App\Enums\TenantStatus;
 use App\Models\Order;
-use App\Models\Tenant;
 use App\Orders\OrderTransitions;
-use App\Tenancy\TenantContext;
+use App\Tenancy\EachStore;
 use Illuminate\Console\Attributes\Description;
 use Illuminate\Console\Attributes\Signature;
 use Illuminate\Console\Command;
@@ -22,24 +20,20 @@ use Illuminate\Console\Command;
 #[Description('Expire unpaid orders past their payment window')]
 final class ExpireOrders extends Command
 {
-    public function handle(TenantContext $context, OrderTransitions $transitions): int
+    public function handle(EachStore $stores, OrderTransitions $transitions): int
     {
         $expired = 0;
 
-        Tenant::query()->where('status', TenantStatus::Active)->orderBy('id')->each(
-            function (Tenant $store) use ($context, $transitions, &$expired): void {
-                $context->run($store, function () use ($transitions, &$expired): void {
-                    Order::query()
-                        ->where('status', OrderStatus::PendingPayment)
-                        ->where('expires_at', '<=', now())
-                        ->orderBy('expires_at')
-                        ->each(function (Order $order) use ($transitions, &$expired): void {
-                            $transitions->expire($order);
-                            $expired++;
-                        });
+        $stores->run(function () use ($transitions, &$expired): void {
+            Order::query()
+                ->where('status', OrderStatus::PendingPayment)
+                ->where('expires_at', '<=', now())
+                ->orderBy('expires_at')
+                ->each(function (Order $order) use ($transitions, &$expired): void {
+                    $transitions->expire($order);
+                    $expired++;
                 });
-            },
-        );
+        });
 
         $this->info("Expired {$expired} order(s).");
 
