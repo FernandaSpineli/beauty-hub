@@ -9,6 +9,7 @@ use App\Http\Controllers\Admin\AuditLogController;
 use App\Http\Controllers\Admin\BrandController;
 use App\Http\Controllers\Admin\CategoryController;
 use App\Http\Controllers\Admin\CouponController;
+use App\Http\Controllers\Admin\Dashboard;
 use App\Http\Controllers\Admin\InventoryController;
 use App\Http\Controllers\Admin\KitController;
 use App\Http\Controllers\Admin\LotRecall;
@@ -101,4 +102,5 @@ Route::prefix('admin')->middleware(['auth:sanctum', EnsureStoreManager::class])-
     Route::delete('team/{member}', [TeamController::class, 'destroy'])->whereUuid('member');
 
     Route::get('audit-log', AuditLogController::class);
+    Route::get('dashboard', Dashboard::class);
 });
