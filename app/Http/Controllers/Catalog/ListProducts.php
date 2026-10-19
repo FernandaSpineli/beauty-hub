@@ -12,7 +12,7 @@ use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Validation\Rule;
 
 /**
- * GET /products?q=&category=&brand=a,b&skin_type=&vegan=1&cruelty_free=1
+ * GET /products?q=&category=&brand=a,b&skin_type=&vegan=1&cruelty_free=1&in_stock=1
  *   &min_price=&max_price=&sort=&page=&per_page=
  */
 final class ListProducts
@@ -26,6 +26,7 @@ final class ListProducts
             'skin_type' => ['sometimes', Rule::enum(SkinType::class)],
             'vegan' => ['sometimes', 'boolean'],
             'cruelty_free' => ['sometimes', 'boolean'],
+            'in_stock' => ['sometimes', 'boolean'],
             'min_price' => ['sometimes', 'integer', 'min:0'],
             'max_price' => ['sometimes', 'integer', 'min:0', 'gte:min_price'],
             'sort' => ['sometimes', Rule::in(ProductSearch::SORTS)],
@@ -42,6 +43,7 @@ final class ListProducts
             skinType: $request->enum('skin_type', SkinType::class),
             veganOnly: $request->boolean('vegan'),
             crueltyFreeOnly: $request->boolean('cruelty_free'),
+            inStockOnly: $request->boolean('in_stock'),
             minPriceCents: $request->filled('min_price') ? $request->integer('min_price') : null,
             maxPriceCents: $request->filled('max_price') ? $request->integer('max_price') : null,
             sort: $request->string('sort', $query !== null ? 'relevance' : 'newest')->toString(),

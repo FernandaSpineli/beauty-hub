@@ -32,6 +32,7 @@ final readonly class ProductSearch
         public ?SkinType $skinType = null,
         public bool $veganOnly = false,
         public bool $crueltyFreeOnly = false,
+        public bool $inStockOnly = false,
         public ?int $minPriceCents = null,
         public ?int $maxPriceCents = null,
         public string $sort = 'newest',
@@ -49,7 +50,7 @@ final readonly class ProductSearch
             ->join('brands', 'brands.id', '=', 'products.brand_id')
             ->whereHas('variants', fn (Builder $q) => $q->where('is_active', true))
             ->withMin(['variants as from_price_cents' => fn (Builder $q) => $q->where('is_active', true)], 'price_cents')
-            ->with(['brand', 'variants' => fn ($q) => $q->where('is_active', true)]);
+            ->with(['brand', 'variants' => fn ($q) => $q->where('is_active', true)->with('stock')]);
 
         $this->applySearch($query);
         $this->applyFilters($query);
@@ -129,6 +130,12 @@ final readonly class ProductSearch
 
         if ($this->crueltyFreeOnly) {
             $query->where('products.is_cruelty_free', true);
+        }
+
+        if ($this->inStockOnly) {
+            $query->whereHas('variants', fn (Builder $q) => $q
+                ->where('is_active', true)
+                ->whereHas('stock', fn (Builder $s) => $s->where('available', '>', 0)));
         }
 
         if ($this->minPriceCents !== null || $this->maxPriceCents !== null) {
