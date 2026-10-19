@@ -45,6 +45,11 @@ services:
     horizon:
         <<: *app
         command: ["php", "artisan", "horizon"]
+        healthcheck:
+            test: ["CMD", "php", "artisan", "horizon:status"]
+            interval: 30s
+            timeout: 10s
+            retries: 3
         depends_on:
             migrate:
                 condition: service_completed_successfully
@@ -56,6 +61,10 @@ services:
     scheduler:
         <<: *app
         command: ["php", "artisan", "schedule:work"]
+        # The base image's check probes the web server, which this
+        # container does not run.
+        healthcheck:
+            disable: true
         depends_on:
             migrate:
                 condition: service_completed_successfully
