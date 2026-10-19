@@ -7,6 +7,7 @@ namespace App\Orders;
 use App\Cart\CartQuote;
 use App\Cart\CouponRules;
 use App\Enums\OrderStatus;
+use App\Events\OrderPlaced;
 use App\Exceptions\ApiException;
 use App\Inventory\StockAllocator;
 use App\Models\Cart;
@@ -113,6 +114,8 @@ final readonly class PlaceOrder
 
             $cart->items()->delete();
             $cart->update(['coupon_id' => null]);
+
+            OrderPlaced::dispatch($order);
 
             // Reload for the columns PostgreSQL computes (total_cents).
             return [$order->refresh(), true];

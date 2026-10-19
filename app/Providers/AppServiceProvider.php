@@ -6,12 +6,14 @@ namespace App\Providers;
 
 use App\Database\PostgresConnection;
 use App\Enums\UserRole;
+use App\Listeners\SendOrderEmails;
 use App\Models\PersonalAccessToken;
 use App\Models\Tenant;
 use App\Models\User;
 use App\Payments\PaymentGateway;
 use App\Payments\StripeGateway;
 use App\Payments\UnavailableGateway;
+use App\Tenancy\JobTenancy;
 use App\Tenancy\TenantContext;
 use Closure;
 use Illuminate\Cache\RateLimiting\Limit;
@@ -38,6 +40,7 @@ final class AppServiceProvider extends ServiceProvider
     {
         // Scoped: a fresh, empty context for every request and queued job.
         $this->app->scoped(TenantContext::class);
+        $this->app->singleton(JobTenancy::class);
 
         $this->app->singleton(PaymentGateway::class, function (): PaymentGateway {
             $secret = config('services.stripe.secret');
@@ -73,28 +76,21 @@ final class AppServiceProvider extends ServiceProvider
 
         $this->configureRateLimits();
         $this->runJobsAsTheirStore();
+        Event::subscribe(SendOrderEmails::class);
     }
 
     /**
-     * A job dispatched while serving a store runs as that store: the tenant
-     * ID travels in Laravel's Context (restored before this listener runs)
-     * and is set before each job. Workers reuse their database connection,
-     * so the tenant is also set or cleared explicitly every time; nothing
-     * carries over from the previous job.
+     * A job dispatched while serving a store runs as that store (see
+     * JobTenancy). The tenant ID travels in Laravel's Context, which the
+     * framework restores before these listeners run.
      */
     private function runJobsAsTheirStore(): void
     {
-        Event::listen(function (JobProcessing $event): void {
-            $context = $this->app->make(TenantContext::class);
-            $id = Context::get('tenant_id');
-            $store = is_string($id) ? Tenant::query()->find($id) : null;
-
-            $store === null ? $context->clear() : $context->set($store);
-        });
-
-        Event::listen([JobProcessed::class, JobFailed::class, JobExceptionOccurred::class], function (): void {
-            $this->app->make(TenantContext::class)->clear();
-        });
+        Event::listen(fn (JobProcessing $event) => $this->app->make(JobTenancy::class)->starting());
+        Event::listen(
+            [JobProcessed::class, JobFailed::class, JobExceptionOccurred::class],
+            fn () => $this->app->make(JobTenancy::class)->finished(),
+        );
     }
 
     private function configureRateLimits(): void

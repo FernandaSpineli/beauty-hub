@@ -7,6 +7,8 @@ namespace App\Notifications;
 use App\Models\Tenant;
 use App\Models\User;
 use App\Tenancy\StoreUrl;
+use Illuminate\Bus\Queueable;
+use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
 
@@ -14,8 +16,10 @@ use Illuminate\Notifications\Notification;
  * Password reset email, sent in the store's name with a link back to the
  * store's own subdomain.
  */
-final class ResetPasswordNotification extends Notification
+final class ResetPasswordNotification extends Notification implements ShouldQueue
 {
+    use Queueable;
+
     public function __construct(
         private readonly Tenant $store,
         private readonly string $token,

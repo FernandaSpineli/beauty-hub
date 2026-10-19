@@ -19,6 +19,9 @@ use Illuminate\Support\Facades\Log;
  * Applies a stored Stripe event exactly once. The event row is locked and
  * marked processed in the same transaction as its effects, so a redelivery
  * or a retried job finds it done.
+ *
+ * The store is resolved first and the transaction runs inside it: events
+ * fired after the commit (order paid emails) must still see the store.
  */
 final readonly class StripeEventHandler
 {
@@ -28,6 +31,21 @@ final readonly class StripeEventHandler
     ) {}
 
     public function handle(string $eventId): void
+    {
+        $event = StripeEvent::query()->find($eventId);
+        if ($event === null || $event->processed_at !== null) {
+            return;
+        }
+
+        $store = str_starts_with($event->type, 'checkout.session.')
+            ? Tenant::query()->find($this->string($event->payload, 'data.object.metadata.tenant_id'))
+            : null;
+
+        $apply = fn () => $this->apply($eventId);
+        $store === null ? $apply() : $this->context->run($store, $apply);
+    }
+
+    private function apply(string $eventId): void
     {
         DB::transaction(function () use ($eventId): void {
             $event = StripeEvent::query()->lockForUpdate()->find($eventId);
@@ -100,28 +118,25 @@ final readonly class StripeEventHandler
     }
 
     /**
-     * Runs as the store named in the session's metadata, with the payment row
-     * locked.
+     * Applies a change to the session's payment, row locked. Runs inside the
+     * store named in the session's metadata (see handle()).
      *
      * @param  array<string, mixed>  $session
      * @param  Closure(Payment): string  $apply
      */
     private function forSession(array $session, Closure $apply): string
     {
-        $store = Tenant::query()->find($this->string($session, 'metadata.tenant_id'));
-        if ($store === null) {
+        if ($this->context->current() === null) {
             return 'unknown_store';
         }
 
-        return $this->context->run($store, function () use ($session, $apply): string {
-            $payment = Payment::query()
-                ->with('order')
-                ->where('checkout_session_id', $this->string($session, 'id'))
-                ->lockForUpdate()
-                ->first();
+        $payment = Payment::query()
+            ->with('order')
+            ->where('checkout_session_id', $this->string($session, 'id'))
+            ->lockForUpdate()
+            ->first();
 
-            return $payment === null ? 'unknown_session' : $apply($payment);
-        });
+        return $payment === null ? 'unknown_session' : $apply($payment);
     }
 
     private function needsRefund(Payment $payment, string $note, string $logEvent): string

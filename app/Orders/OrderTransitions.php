@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace App\Orders;
 
 use App\Enums\OrderStatus;
+use App\Events\OrderPaid;
+use App\Events\OrderShipped;
 use App\Exceptions\ApiException;
 use App\Inventory\Allocation;
 use App\Inventory\StockAllocator;
@@ -39,15 +41,21 @@ final readonly class OrderTransitions
 
     public function markPaid(Order $order, ?string $note = null): Order
     {
-        return $this->move($order, OrderStatus::Paid, null, $note, function (Order $o): void {
+        $order = $this->move($order, OrderStatus::Paid, null, $note, function (Order $o): void {
             $this->allocator->sell($this->allocations($o), "order:{$o->id}");
             $o->paid_at = now();
         });
+        OrderPaid::dispatch($order);
+
+        return $order;
     }
 
     public function ship(Order $order, User $by, ?string $note = null): Order
     {
-        return $this->move($order, OrderStatus::Shipped, $by, $note);
+        $order = $this->move($order, OrderStatus::Shipped, $by, $note);
+        OrderShipped::dispatch($order, $note);
+
+        return $order;
     }
 
     public function deliver(Order $order, User $by, ?string $note = null): Order
