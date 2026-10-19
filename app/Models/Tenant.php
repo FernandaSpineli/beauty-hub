@@ -20,6 +20,8 @@ use Illuminate\Support\Carbon;
  * @property string $name
  * @property TenantStatus $status
  * @property int $min_shelf_life_days
+ * @property string|null $stripe_account_id
+ * @property bool $stripe_charges_enabled
  * @property Carbon $created_at
  * @property Carbon $updated_at
  */
@@ -37,6 +39,7 @@ final class Tenant extends Model
     protected $attributes = [
         'status' => 'active',
         'min_shelf_life_days' => 30,
+        'stripe_charges_enabled' => false,
     ];
 
     /**
@@ -47,6 +50,7 @@ final class Tenant extends Model
         return [
             'status' => TenantStatus::class,
             'min_shelf_life_days' => 'integer',
+            'stripe_charges_enabled' => 'boolean',
         ];
     }
 

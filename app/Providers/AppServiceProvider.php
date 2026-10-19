@@ -5,8 +5,12 @@ declare(strict_types=1);
 namespace App\Providers;
 
 use App\Database\PostgresConnection;
+use App\Enums\UserRole;
 use App\Models\PersonalAccessToken;
 use App\Models\User;
+use App\Payments\PaymentGateway;
+use App\Payments\StripeGateway;
+use App\Payments\UnavailableGateway;
 use App\Tenancy\TenantContext;
 use Closure;
 use Illuminate\Cache\RateLimiting\Limit;
@@ -19,6 +23,8 @@ use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\ServiceProvider;
 use Laravel\Sanctum\Sanctum;
 use PDO;
+use RuntimeException;
+use Stripe\StripeClient;
 
 final class AppServiceProvider extends ServiceProvider
 {
@@ -26,6 +32,18 @@ final class AppServiceProvider extends ServiceProvider
     {
         // Scoped: a fresh, empty context for every request and queued job.
         $this->app->scoped(TenantContext::class);
+
+        $this->app->singleton(PaymentGateway::class, function (): PaymentGateway {
+            $secret = config('services.stripe.secret');
+            if (! is_string($secret) || $secret === '') {
+                return new UnavailableGateway;
+            }
+            if (str_starts_with($secret, 'sk_live_') && ! $this->app->isProduction()) {
+                throw new RuntimeException('Live Stripe keys are only accepted when APP_ENV=production.');
+            }
+
+            return new StripeGateway(new StripeClient($secret));
+        });
 
         Connection::resolverFor('pgsql', fn (Closure|PDO $pdo, string $database, string $prefix, array $config): PostgresConnection => new PostgresConnection($pdo, $database, $prefix, $config));
     }
@@ -35,6 +53,7 @@ final class AppServiceProvider extends ServiceProvider
         Sanctum::usePersonalAccessTokenModel(PersonalAccessToken::class);
 
         Gate::define('manage-store', fn (User $user): bool => $user->role->managesStore());
+        Gate::define('manage-payments', fn (User $user): bool => $user->role === UserRole::Owner);
 
         // A reconnect opens a new PostgreSQL session without app.tenant_id;
         // copy the current tenant into it before any query runs.

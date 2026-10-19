@@ -12,6 +12,7 @@ use App\Http\Controllers\Admin\InventoryController;
 use App\Http\Controllers\Admin\KitController;
 use App\Http\Controllers\Admin\LotRecall;
 use App\Http\Controllers\Admin\OrderController as AdminOrderController;
+use App\Http\Controllers\Admin\PaymentSettings;
 use App\Http\Controllers\Admin\ProductController;
 use App\Http\Controllers\Admin\VariantController;
 use App\Http\Controllers\Auth\ForgotPassword;
@@ -61,6 +62,7 @@ Route::middleware('auth:sanctum')->group(function (): void {
     Route::post('orders', [OrderController::class, 'store']);
     Route::get('orders/{order}', [OrderController::class, 'show'])->whereUuid('order');
     Route::post('orders/{order}/cancel', [OrderController::class, 'cancel'])->whereUuid('order');
+    Route::post('orders/{order}/checkout', [OrderController::class, 'checkout'])->whereUuid('order');
 });
 
 // Store management: owner and staff only.
@@ -84,4 +86,7 @@ Route::prefix('admin')->middleware(['auth:sanctum', EnsureStoreManager::class])-
     Route::get('orders/{order}', [AdminOrderController::class, 'show'])->whereUuid('order');
     Route::patch('orders/{order}/status', [AdminOrderController::class, 'updateStatus'])->whereUuid('order');
     Route::get('lots/{lot}/orders', LotRecall::class)->whereUuid('lot');
+
+    Route::get('payments', [PaymentSettings::class, 'show']);
+    Route::post('payments/onboarding', [PaymentSettings::class, 'onboarding']);
 });

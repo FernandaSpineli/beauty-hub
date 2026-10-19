@@ -11,6 +11,7 @@ use App\Models\Order;
 use App\Models\User;
 use App\Orders\OrderTransitions;
 use App\Orders\PlaceOrder;
+use App\Payments\StartCheckout;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
@@ -49,6 +50,19 @@ final class OrderController
         return (new OrderResource($order->load(['items', 'history'])))
             ->response()
             ->setStatusCode($created ? 201 : 200);
+    }
+
+    /**
+     * Opens a Stripe Checkout page for an order awaiting payment.
+     */
+    public function checkout(Request $request, string $order, StartCheckout $checkout): JsonResponse
+    {
+        $payment = $checkout->handle($this->own($request, $order));
+
+        return new JsonResponse(['data' => [
+            'checkout_url' => $payment->checkout_url,
+            'expires_at' => $payment->expires_at->toIso8601String(),
+        ]]);
     }
 
     public function cancel(Request $request, string $order, OrderTransitions $transitions): OrderResource

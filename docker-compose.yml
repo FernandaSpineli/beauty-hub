@@ -65,6 +65,22 @@ services:
             redis:
                 condition: service_healthy
 
+    # Forwards Stripe test-mode events (platform and connected accounts) to
+    # the webhook:
+    #   docker compose --profile stripe up -d
+    #   docker compose logs stripe   # "Your webhook signing secret is whsec_..."
+    stripe:
+        image: stripe/stripe-cli:v1.53.0
+        profiles: ["stripe"]
+        command:
+            - listen
+            - --forward-to=http://app:8000/api/v1/stripe/webhook
+            - --forward-connect-to=http://app:8000/api/v1/stripe/webhook
+        environment:
+            STRIPE_API_KEY: ${STRIPE_SECRET_KEY:-}
+        depends_on:
+            - app
+
     # Catches every email the app sends: http://localhost:8025
     mailpit:
         image: axllent/mailpit:v1.31.6

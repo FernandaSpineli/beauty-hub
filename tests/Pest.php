@@ -8,6 +8,7 @@ use App\Models\User;
 use App\Tenancy\TenantContext;
 use App\Tenancy\TenantIsolation;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Testing\TestResponse;
 use Tests\FeatureTestCase;
 use Tests\TestCase;
 
@@ -69,4 +70,27 @@ function address(array $overrides = []): array
         'postal_code' => '01310-100', 'street' => 'Avenida Paulista', 'number' => '1578',
         'district' => 'Bela Vista', 'city' => 'São Paulo', 'state' => 'SP', ...$overrides,
     ];
+}
+
+/**
+ * Posts a Stripe event to the webhook, signed the way Stripe signs it.
+ *
+ * @param  array<string, mixed>  $object
+ */
+function stripeEvent(string $type, array $object, ?string $id = null, ?string $secret = null): TestResponse
+{
+    $payload = (string) json_encode([
+        'id' => $id ?? 'evt_'.bin2hex(random_bytes(8)),
+        'object' => 'event',
+        'type' => $type,
+        'data' => ['object' => $object],
+    ]);
+    $timestamp = time();
+    $signature = hash_hmac('sha256', "{$timestamp}.{$payload}", $secret ?? config()->string('services.stripe.webhook_secret'));
+
+    return test()->call('POST', 'http://'.config('tenancy.central_domain').'/api/v1/stripe/webhook', [], [], [], [
+        'CONTENT_TYPE' => 'application/json',
+        'HTTP_ACCEPT' => 'application/json',
+        'HTTP_STRIPE_SIGNATURE' => "t={$timestamp},v1={$signature}",
+    ], $payload);
 }
