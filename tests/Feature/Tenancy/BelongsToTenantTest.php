@@ -7,6 +7,8 @@ use App\Tenancy\BelongsToTenant;
 use App\Tenancy\NoTenantContext;
 use App\Tenancy\TenantContext;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\QueryException;
+use Illuminate\Support\Facades\DB;
 
 /**
  * @property int $id
@@ -68,4 +70,11 @@ it('restores the previous tenant after running as another one', function (): voi
 
     expect($this->context->id())->toBe($this->bella->id);
     $this->context->clear();
+});
+
+it('surfaces the original database error from inside a store, not "transaction aborted"', function (): void {
+    expect(fn () => DB::transaction(fn () => $this->context->run($this->bella, fn () => DB::select('SELECT * FROM no_such_table'))))
+        ->toThrow(QueryException::class, 'no_such_table');
+
+    expect($this->context->current())->toBeNull();
 });

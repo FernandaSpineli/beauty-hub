@@ -7,7 +7,9 @@ namespace App\Tenancy;
 use App\Models\Tenant;
 use Illuminate\Database\Connection;
 use Illuminate\Database\DatabaseManager;
+use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\Context;
+use Throwable;
 
 /**
  * The tenant the current request or job acts for.
@@ -70,9 +72,36 @@ final class TenantContext
         $this->set($tenant);
 
         try {
-            return $callback();
-        } finally {
-            $previous === null ? $this->clear() : $this->set($previous);
+            $result = $callback();
+        } catch (Throwable $e) {
+            $this->restoreAfterFailure($previous);
+
+            throw $e;
+        }
+
+        $this->restore($previous);
+
+        return $result;
+    }
+
+    private function restore(?Tenant $previous): void
+    {
+        $previous === null ? $this->clear() : $this->set($previous);
+    }
+
+    /**
+     * If the failure was a database error inside a transaction, PostgreSQL
+     * has aborted that transaction and refuses set_config until it rolls
+     * back, which also reverts app.tenant_id. Restore the PHP side and keep
+     * the original error rather than masking it with "transaction aborted".
+     */
+    private function restoreAfterFailure(?Tenant $previous): void
+    {
+        try {
+            $this->restore($previous);
+        } catch (QueryException) {
+            $this->tenant = $previous;
+            $previous === null ? Context::forget('tenant_id') : Context::add('tenant_id', $previous->id);
         }
     }
 
