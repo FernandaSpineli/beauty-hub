@@ -41,6 +41,28 @@ services:
             retries: 5
         restart: unless-stopped
 
+    # Queue workers (Redis), supervised by Horizon.
+    horizon:
+        <<: *app
+        command: ["php", "artisan", "horizon"]
+        depends_on:
+            migrate:
+                condition: service_completed_successfully
+            redis:
+                condition: service_healthy
+        restart: unless-stopped
+
+    # Runs scheduled tasks (order expiry, expiry alerts, cleanups).
+    scheduler:
+        <<: *app
+        command: ["php", "artisan", "schedule:work"]
+        depends_on:
+            migrate:
+                condition: service_completed_successfully
+            redis:
+                condition: service_healthy
+        restart: unless-stopped
+
     # Composer, tests and static analysis against the mounted source:
     #   docker compose run --rm dev composer install
     dev:

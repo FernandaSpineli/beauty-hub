@@ -7,6 +7,7 @@ namespace App\Providers;
 use App\Database\PostgresConnection;
 use App\Enums\UserRole;
 use App\Models\PersonalAccessToken;
+use App\Models\Tenant;
 use App\Models\User;
 use App\Payments\PaymentGateway;
 use App\Payments\StripeGateway;
@@ -17,6 +18,11 @@ use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Database\Connection;
 use Illuminate\Database\Events\ConnectionEstablished;
 use Illuminate\Http\Request;
+use Illuminate\Queue\Events\JobExceptionOccurred;
+use Illuminate\Queue\Events\JobFailed;
+use Illuminate\Queue\Events\JobProcessed;
+use Illuminate\Queue\Events\JobProcessing;
+use Illuminate\Support\Facades\Context;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\RateLimiter;
@@ -66,6 +72,29 @@ final class AppServiceProvider extends ServiceProvider
         });
 
         $this->configureRateLimits();
+        $this->runJobsAsTheirStore();
+    }
+
+    /**
+     * A job dispatched while serving a store runs as that store: the tenant
+     * ID travels in Laravel's Context (restored before this listener runs)
+     * and is set before each job. Workers reuse their database connection,
+     * so the tenant is also set or cleared explicitly every time; nothing
+     * carries over from the previous job.
+     */
+    private function runJobsAsTheirStore(): void
+    {
+        Event::listen(function (JobProcessing $event): void {
+            $context = $this->app->make(TenantContext::class);
+            $id = Context::get('tenant_id');
+            $store = is_string($id) ? Tenant::query()->find($id) : null;
+
+            $store === null ? $context->clear() : $context->set($store);
+        });
+
+        Event::listen([JobProcessed::class, JobFailed::class, JobExceptionOccurred::class], function (): void {
+            $this->app->make(TenantContext::class)->clear();
+        });
     }
 
     private function configureRateLimits(): void
