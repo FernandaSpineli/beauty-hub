@@ -14,11 +14,20 @@ use App\Http\Controllers\Auth\Login;
 use App\Http\Controllers\Auth\Logout;
 use App\Http\Controllers\Auth\Register;
 use App\Http\Controllers\Auth\ResetPassword;
+use App\Http\Controllers\Catalog\ListBrands;
+use App\Http\Controllers\Catalog\ListCategories;
+use App\Http\Controllers\Catalog\ListProducts;
+use App\Http\Controllers\Catalog\ShowProduct;
 use App\Http\Controllers\Store\ShowStore;
 use App\Http\Middleware\EnsureStoreManager;
 use Illuminate\Support\Facades\Route;
 
 Route::get('store', ShowStore::class);
+
+Route::get('categories', ListCategories::class);
+Route::get('brands', ListBrands::class);
+Route::get('products', ListProducts::class);
+Route::get('products/{slug}', ShowProduct::class)->where('slug', '[a-z0-9-]+');
 
 Route::prefix('auth')->group(function (): void {
     Route::post('register', Register::class)->middleware('throttle:auth');
