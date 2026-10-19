@@ -21,19 +21,23 @@ final readonly class CatalogCache
     public function __construct(private TenantContext $context) {}
 
     /**
-     * @template T
+     * Caches the callback's result as plain JSON data. Objects such as API
+     * resources would not survive the cache: Laravel refuses to unserialize
+     * arbitrary classes (cache.serializable_classes) and returns
+     * __PHP_Incomplete_Class instead.
      *
-     * @param  Closure(): T  $callback
-     * @return T
+     * @param  Closure(): mixed  $callback
+     * @return array<array-key, mixed>
      */
-    public function remember(string $key, Closure $callback): mixed
+    public function remember(string $key, Closure $callback): array
     {
         $store = $this->context->require()->id;
 
+        /** @var array<array-key, mixed> */
         return $this->tagged($store)->remember(
             "catalog:{$store}:{$key}",
             config()->integer('cache.catalog_ttl_seconds'),
-            $callback,
+            fn (): mixed => json_decode(json_encode($callback(), JSON_THROW_ON_ERROR), true, flags: JSON_THROW_ON_ERROR),
         );
     }
 

@@ -42,3 +42,13 @@ it('never serves one store\'s cached catalog to another', function (): void {
         ->and(categoryNames('glow'))->toBe(['Perfumaria'])
         ->and(categoryNames('bella'))->toBe(['Maquiagem']);
 });
+
+it('serves sub-categories intact from cache', function (): void {
+    asStore($this->bella, fn () => Category::factory()->create(['name' => 'Batons', 'parent_id' => $this->category->id]));
+
+    $fresh = $this->getJson($this->storeUrl('bella', 'categories'))->json('data');
+    $cached = $this->getJson($this->storeUrl('bella', 'categories'))->json('data');
+
+    expect($cached)->toBe($fresh)
+        ->and($cached[0]['children'][0]['name'])->toBe('Batons');
+});

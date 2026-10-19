@@ -19,7 +19,7 @@ final class ListCategories
         return new JsonResponse($cache->remember('categories', fn (): array => [
             'data' => CategoryResource::collection(
                 Category::query()->whereNull('parent_id')->with('children')->orderBy('position')->orderBy('name')->get(),
-            )->resolve(),
+            ),
         ]));
     }
 }

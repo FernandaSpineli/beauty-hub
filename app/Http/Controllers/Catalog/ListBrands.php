@@ -19,7 +19,7 @@ final class ListBrands
         return new JsonResponse($cache->remember('brands', fn (): array => [
             'data' => BrandResource::collection(
                 Brand::query()->whereHas('products', fn ($q) => $q->visible())->orderBy('name')->get(),
-            )->resolve(),
+            ),
         ]));
     }
 }

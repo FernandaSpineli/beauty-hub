@@ -36,9 +36,12 @@ return [
 
     'stores' => [
 
+        // Used by the tests. Serializing like Redis does makes them catch
+        // values that do not survive the trip (objects come back as
+        // __PHP_Incomplete_Class, see serializable_classes below).
         'array' => [
             'driver' => 'array',
-            'serialize' => false,
+            'serialize' => true,
         ],
 
         'database' => [
