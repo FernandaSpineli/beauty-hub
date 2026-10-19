@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use App\Enums\UserRole;
 use App\Models\Tenant;
+use Illuminate\Support\Facades\Route;
 
 beforeEach(function (): void {
     $this->store = Tenant::factory()->create(['slug' => 'bella']);
@@ -25,20 +26,22 @@ it('forbids customers and requires a token', function (): void {
     $this->withoutToken()->getJson($this->storeUrl('bella', 'admin/products'))->assertUnauthorized();
 });
 
-it('protects every admin route', function (string $method, string $path): void {
-    $this->json($method, $this->storeUrl('bella', $path))->assertUnauthorized();
+it('protects every admin route', function (): void {
+    // Read from the router, so new admin routes are covered automatically.
+    $routes = collect(Route::getRoutes()->getRoutes())
+        ->filter(fn ($route): bool => str_starts_with($route->uri(), 'api/v1/admin/'))
+        ->flatMap(fn ($route): array => array_map(
+            fn (string $method): array => [$method, preg_replace('/\{\w+\}/', '0199f0c4-0000-7000-8000-000000000001', substr($route->uri(), strlen('api/v1/')))],
+            array_diff($route->methods(), ['HEAD']),
+        ));
+    expect($routes->count())->toBeGreaterThan(15);
 
-    app('auth')->forgetGuards();
-    $this->withToken(tokenFor($this->store, UserRole::Customer))
-        ->json($method, $this->storeUrl('bella', $path))
-        ->assertForbidden();
-})->with(function (): array {
-    $id = '0199f0c4-0000-7000-8000-000000000001';
+    $customer = tokenFor($this->store, UserRole::Customer);
+    foreach ($routes as [$method, $path]) {
+        app('auth')->forgetGuards();
+        $this->withoutToken()->json($method, $this->storeUrl('bella', $path))->assertUnauthorized();
 
-    return [
-        ['GET', 'admin/brands'], ['POST', 'admin/brands'], ['PATCH', "admin/brands/{$id}"], ['DELETE', "admin/brands/{$id}"],
-        ['GET', 'admin/categories'], ['POST', 'admin/categories'], ['PATCH', "admin/categories/{$id}"], ['DELETE', "admin/categories/{$id}"],
-        ['GET', 'admin/products'], ['POST', 'admin/products'], ['GET', "admin/products/{$id}"], ['PATCH', "admin/products/{$id}"],
-        ['POST', "admin/products/{$id}/variants"], ['PATCH', "admin/variants/{$id}"], ['DELETE', "admin/variants/{$id}"],
-    ];
+        app('auth')->forgetGuards();
+        $this->withToken($customer)->json($method, $this->storeUrl('bella', $path))->assertForbidden();
+    }
 });

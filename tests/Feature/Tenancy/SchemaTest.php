@@ -57,3 +57,17 @@ it('uses BelongsToTenant on every model whose table has a tenant_id', function (
 
     expect($scoped)->toContain(User::class, PersonalAccessToken::class);
 });
+
+it('runs every view with the caller\'s privileges, so row-level security applies', function (): void {
+    $views = DB::select(<<<'SQL'
+        SELECT c.relname AS name,
+               coalesce('security_invoker=true' = ANY (c.reloptions), false) AS invoker
+        FROM pg_class c
+        WHERE c.relnamespace = 'public'::regnamespace AND c.relkind = 'v'
+        SQL);
+
+    expect($views)->not->toBeEmpty();
+    foreach ($views as $view) {
+        expect([$view->name, $view->invoker])->toBe([$view->name, true]);
+    }
+});

@@ -12,6 +12,9 @@ use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 /**
  * A sellable shade or size of a product. Prices are in centavos (BRL).
@@ -26,6 +29,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property bool $is_active
  * @property int $position
  * @property-read Product $product
+ * @property-read VariantStock|null $stock
  */
 #[Fillable(['sku', 'name', 'shade_hex', 'price_cents', 'compare_at_price_cents', 'is_active', 'position'])]
 final class ProductVariant extends Model
@@ -60,5 +64,32 @@ final class ProductVariant extends Model
     public function product(): BelongsTo
     {
         return $this->belongsTo(Product::class);
+    }
+
+    /**
+     * @return HasOne<VariantStock, $this>
+     */
+    public function stock(): HasOne
+    {
+        return $this->hasOne(VariantStock::class, 'variant_id');
+    }
+
+    /**
+     * @return HasMany<StockLot, $this>
+     */
+    public function lots(): HasMany
+    {
+        return $this->hasMany(StockLot::class, 'variant_id');
+    }
+
+    /**
+     * Components of a kit; empty for a regular variant.
+     *
+     * @return BelongsToMany<ProductVariant, $this>
+     */
+    public function components(): BelongsToMany
+    {
+        return $this->belongsToMany(self::class, 'kit_components', 'kit_variant_id', 'component_variant_id')
+            ->withPivot('quantity');
     }
 }

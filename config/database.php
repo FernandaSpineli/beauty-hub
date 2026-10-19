@@ -48,6 +48,9 @@ return [
             'prefix_indexes' => true,
             'search_path' => 'public',
             'sslmode' => env('DB_SSLMODE', 'prefer'),
+            // current_date in SQL (e.g. which lots may still be sold) is a
+            // date in the stores' time zone.
+            'timezone' => env('DB_TIMEZONE', 'America/Sao_Paulo'),
         ],
 
         // Owns the schema and runs migrations (php artisan migrate
