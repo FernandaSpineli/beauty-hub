@@ -62,9 +62,12 @@ services:
         <<: *app
         command: ["php", "artisan", "schedule:work"]
         # The base image's check probes the web server, which this
-        # container does not run.
+        # container does not run: check the scheduler process instead.
         healthcheck:
-            disable: true
+            test: ["CMD-SHELL", "pgrep -f schedule:work > /dev/null"]
+            interval: 30s
+            timeout: 5s
+            retries: 3
         depends_on:
             migrate:
                 condition: service_completed_successfully
