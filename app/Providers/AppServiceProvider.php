@@ -4,10 +4,13 @@ declare(strict_types=1);
 
 namespace App\Providers;
 
+use App\Database\PostgresConnection;
 use App\Models\PersonalAccessToken;
 use App\Models\User;
 use App\Tenancy\TenantContext;
+use Closure;
 use Illuminate\Cache\RateLimiting\Limit;
+use Illuminate\Database\Connection;
 use Illuminate\Database\Events\ConnectionEstablished;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Event;
@@ -15,6 +18,7 @@ use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\ServiceProvider;
 use Laravel\Sanctum\Sanctum;
+use PDO;
 
 final class AppServiceProvider extends ServiceProvider
 {
@@ -22,6 +26,8 @@ final class AppServiceProvider extends ServiceProvider
     {
         // Scoped: a fresh, empty context for every request and queued job.
         $this->app->scoped(TenantContext::class);
+
+        Connection::resolverFor('pgsql', fn (Closure|PDO $pdo, string $database, string $prefix, array $config): PostgresConnection => new PostgresConnection($pdo, $database, $prefix, $config));
     }
 
     public function boot(): void
