@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Models;
 
+use App\Audit\Audited;
 use App\Enums\TenantStatus;
 use Database\Factories\TenantFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
@@ -30,7 +31,7 @@ use Illuminate\Support\Carbon;
 final class Tenant extends Model
 {
     /** @use HasFactory<TenantFactory> */
-    use HasFactory, HasUuids;
+    use Audited, HasFactory, HasUuids;
 
     /**
      * Mirrors the column defaults, so a freshly created store has them.

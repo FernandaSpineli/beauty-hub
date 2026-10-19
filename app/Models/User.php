@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Models;
 
+use App\Audit\Audited;
 use App\Enums\UserRole;
 use App\Notifications\ResetPasswordNotification;
 use App\Tenancy\BelongsToTenant;
@@ -36,7 +37,7 @@ use SensitiveParameter;
 final class User extends Authenticatable
 {
     /** @use HasFactory<UserFactory> */
-    use BelongsToTenant, HasApiTokens, HasFactory, HasUuids, Notifiable;
+    use Audited, BelongsToTenant, HasApiTokens, HasFactory, HasUuids, Notifiable;
 
     /**
      * Mirrors the column default, so a freshly created user has its role.

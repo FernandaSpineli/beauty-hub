@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Models;
 
+use App\Audit\Audited;
 use App\Catalog\FlushesCatalogCache;
 use App\Tenancy\BelongsToTenant;
 use Database\Factories\BrandFactory;
@@ -22,7 +23,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 final class Brand extends Model
 {
     /** @use HasFactory<BrandFactory> */
-    use BelongsToTenant, FlushesCatalogCache, HasFactory, HasUuids;
+    use Audited, BelongsToTenant, FlushesCatalogCache, HasFactory, HasUuids;
 
     /**
      * @return HasMany<Product, $this>

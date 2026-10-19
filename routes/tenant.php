@@ -5,6 +5,7 @@ declare(strict_types=1);
 use App\Http\Controllers\Account\ChangePassword;
 use App\Http\Controllers\Account\ShowAccount;
 use App\Http\Controllers\Account\UpdateAccount;
+use App\Http\Controllers\Admin\AuditLogController;
 use App\Http\Controllers\Admin\BrandController;
 use App\Http\Controllers\Admin\CategoryController;
 use App\Http\Controllers\Admin\CouponController;
@@ -98,4 +99,6 @@ Route::prefix('admin')->middleware(['auth:sanctum', EnsureStoreManager::class])-
     Route::post('team', [TeamController::class, 'store']);
     Route::patch('team/{member}', [TeamController::class, 'update'])->whereUuid('member');
     Route::delete('team/{member}', [TeamController::class, 'destroy'])->whereUuid('member');
+
+    Route::get('audit-log', AuditLogController::class);
 });

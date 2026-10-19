@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Models;
 
+use App\Audit\Audited;
 use App\Catalog\FlushesCatalogCache;
 use App\Tenancy\BelongsToTenant;
 use Database\Factories\ProductVariantFactory;
@@ -35,7 +36,7 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
 final class ProductVariant extends Model
 {
     /** @use HasFactory<ProductVariantFactory> */
-    use BelongsToTenant, FlushesCatalogCache, HasFactory, HasUuids;
+    use Audited, BelongsToTenant, FlushesCatalogCache, HasFactory, HasUuids;
 
     /**
      * @var array<string, mixed>

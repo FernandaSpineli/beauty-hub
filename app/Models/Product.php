@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Models;
 
+use App\Audit\Audited;
 use App\Casts\SkinTypes;
 use App\Catalog\FlushesCatalogCache;
 use App\Enums\ProductStatus;
@@ -47,7 +48,7 @@ use Illuminate\Support\Collection;
 final class Product extends Model
 {
     /** @use HasFactory<ProductFactory> */
-    use BelongsToTenant, FlushesCatalogCache, HasFactory, HasUuids;
+    use Audited, BelongsToTenant, FlushesCatalogCache, HasFactory, HasUuids;
 
     /**
      * @var array<string, mixed>

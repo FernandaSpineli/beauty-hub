@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Models;
 
+use App\Audit\Audited;
 use App\Enums\CouponKind;
 use App\Tenancy\BelongsToTenant;
 use Database\Factories\CouponFactory;
@@ -30,7 +31,7 @@ use Illuminate\Support\Carbon;
 final class Coupon extends Model
 {
     /** @use HasFactory<CouponFactory> */
-    use BelongsToTenant, HasFactory, HasUuids;
+    use Audited, BelongsToTenant, HasFactory, HasUuids;
 
     /**
      * @var array<string, mixed>
