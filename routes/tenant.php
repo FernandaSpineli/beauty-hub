@@ -8,6 +8,7 @@ use App\Http\Controllers\Account\UpdateAccount;
 use App\Http\Controllers\Admin\BrandController;
 use App\Http\Controllers\Admin\CategoryController;
 use App\Http\Controllers\Admin\InventoryController;
+use App\Http\Controllers\Admin\KitController;
 use App\Http\Controllers\Admin\ProductController;
 use App\Http\Controllers\Admin\VariantController;
 use App\Http\Controllers\Auth\ForgotPassword;
@@ -57,4 +58,5 @@ Route::prefix('admin')->middleware(['auth:sanctum', EnsureStoreManager::class])-
     Route::post('variants/{variant}/lots', [InventoryController::class, 'receive'])->whereUuid('variant');
     Route::post('lots/{lot}/adjustments', [InventoryController::class, 'adjust'])->whereUuid('lot');
     Route::get('stock/expiring', [InventoryController::class, 'expiring']);
+    Route::put('variants/{variant}/components', [KitController::class, 'update'])->whereUuid('variant');
 });
