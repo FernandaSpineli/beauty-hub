@@ -9,8 +9,3 @@ parameters:
         - config
         - database
         - routes
-    ignoreErrors:
-        # No model uses it until the first tenant-scoped table exists. This
-        # entry then stops matching and PHPStan asks for its removal.
-        - identifier: trait.unused
-          path: app/Tenancy/BelongsToTenant.php

@@ -11,5 +11,5 @@ $central = config('tenancy.central_domain');
 // Store APIs: {tenant}.beautyhub.localhost/api/v1/...
 Route::domain('{tenant}.'.$central)
     ->where(['tenant' => '[a-z0-9-]+'])
-    ->middleware(IdentifyTenant::class)
+    ->middleware([IdentifyTenant::class, 'throttle:api'])
     ->group(base_path('routes/tenant.php'));

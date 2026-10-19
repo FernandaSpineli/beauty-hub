@@ -2,6 +2,8 @@
 
 declare(strict_types=1);
 
+use App\Models\PersonalAccessToken;
+use App\Models\User;
 use App\Tenancy\BelongsToTenant;
 use App\Tenancy\TenantIsolation;
 use Illuminate\Database\Eloquent\Model;
@@ -41,6 +43,7 @@ it('forces row-level security with the tenant policy on every table with a tenan
 });
 
 it('uses BelongsToTenant on every model whose table has a tenant_id', function (): void {
+    $scoped = [];
     foreach (glob(app_path('Models/*.php')) ?: [] as $file) {
         $class = 'App\\Models\\'.basename($file, '.php');
         $model = new $class;
@@ -48,6 +51,9 @@ it('uses BelongsToTenant on every model whose table has a tenant_id', function (
 
         if (Schema::hasColumn($model->getTable(), 'tenant_id')) {
             expect(class_uses_recursive($model))->toHaveKey(BelongsToTenant::class);
+            $scoped[] = $class;
         }
     }
-})->throwsNoExceptions();
+
+    expect($scoped)->toContain(User::class, PersonalAccessToken::class);
+});

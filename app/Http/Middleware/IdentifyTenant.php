@@ -35,13 +35,7 @@ final readonly class IdentifyTenant
             throw new ApiException(403, 'STORE_SUSPENDED', 'This store is temporarily unavailable.');
         }
 
-        $this->context->set($tenant);
-
-        try {
-            /** @var Response */
-            return $next($request);
-        } finally {
-            $this->context->clear();
-        }
+        /** @var Response */
+        return $this->context->run($tenant, fn (): mixed => $next($request));
     }
 }

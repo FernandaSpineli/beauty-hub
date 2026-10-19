@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 use App\Exceptions\ErrorEnvelope;
 use App\Http\Middleware\AssignRequestId;
+use App\Http\Middleware\IdentifyTenant;
+use Illuminate\Contracts\Auth\Middleware\AuthenticatesRequests;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
@@ -19,6 +21,13 @@ return Application::configure(basePath: dirname(__DIR__))
     )
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->prepend(AssignRequestId::class);
+
+        // The store must be known before authentication (tokens are stored
+        // per store) and before rate limiting (limits are keyed by store).
+        $middleware->prependToPriorityList(
+            before: AuthenticatesRequests::class,
+            prepend: IdentifyTenant::class,
+        );
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         $exceptions->shouldRenderJsonWhen(
