@@ -25,7 +25,7 @@ final readonly class PaymentSettings
 
     public function show(): JsonResponse
     {
-        Gate::authorize('manage-payments');
+        Gate::authorize('own-store');
         $store = $this->context->require();
 
         if ($store->stripe_account_id !== null) {
@@ -42,7 +42,7 @@ final readonly class PaymentSettings
 
     public function onboarding(Request $request, StartCheckout $payments): JsonResponse
     {
-        Gate::authorize('manage-payments');
+        Gate::authorize('own-store');
         $owner = $request->user();
         assert($owner instanceof User);
 

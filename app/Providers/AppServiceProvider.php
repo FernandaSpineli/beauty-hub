@@ -62,7 +62,7 @@ final class AppServiceProvider extends ServiceProvider
         Sanctum::usePersonalAccessTokenModel(PersonalAccessToken::class);
 
         Gate::define('manage-store', fn (User $user): bool => $user->role->managesStore());
-        Gate::define('manage-payments', fn (User $user): bool => $user->role === UserRole::Owner);
+        Gate::define('own-store', fn (User $user): bool => $user->role === UserRole::Owner);
 
         // A reconnect opens a new PostgreSQL session without app.tenant_id;
         // copy the current tenant into it before any query runs.

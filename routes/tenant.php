@@ -14,6 +14,8 @@ use App\Http\Controllers\Admin\LotRecall;
 use App\Http\Controllers\Admin\OrderController as AdminOrderController;
 use App\Http\Controllers\Admin\PaymentSettings;
 use App\Http\Controllers\Admin\ProductController;
+use App\Http\Controllers\Admin\StoreSettings;
+use App\Http\Controllers\Admin\TeamController;
 use App\Http\Controllers\Admin\VariantController;
 use App\Http\Controllers\Auth\ForgotPassword;
 use App\Http\Controllers\Auth\Login;
@@ -89,4 +91,11 @@ Route::prefix('admin')->middleware(['auth:sanctum', EnsureStoreManager::class])-
 
     Route::get('payments', [PaymentSettings::class, 'show']);
     Route::post('payments/onboarding', [PaymentSettings::class, 'onboarding']);
+
+    Route::get('store', [StoreSettings::class, 'show']);
+    Route::patch('store', [StoreSettings::class, 'update']);
+    Route::get('team', [TeamController::class, 'index']);
+    Route::post('team', [TeamController::class, 'store']);
+    Route::patch('team/{member}', [TeamController::class, 'update'])->whereUuid('member');
+    Route::delete('team/{member}', [TeamController::class, 'destroy'])->whereUuid('member');
 });
