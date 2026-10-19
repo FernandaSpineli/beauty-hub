@@ -7,6 +7,7 @@ use App\Http\Controllers\Account\ShowAccount;
 use App\Http\Controllers\Account\UpdateAccount;
 use App\Http\Controllers\Admin\BrandController;
 use App\Http\Controllers\Admin\CategoryController;
+use App\Http\Controllers\Admin\CouponController;
 use App\Http\Controllers\Admin\InventoryController;
 use App\Http\Controllers\Admin\KitController;
 use App\Http\Controllers\Admin\ProductController;
@@ -16,6 +17,7 @@ use App\Http\Controllers\Auth\Login;
 use App\Http\Controllers\Auth\Logout;
 use App\Http\Controllers\Auth\Register;
 use App\Http\Controllers\Auth\ResetPassword;
+use App\Http\Controllers\Cart\CartController;
 use App\Http\Controllers\Catalog\ListBrands;
 use App\Http\Controllers\Catalog\ListCategories;
 use App\Http\Controllers\Catalog\ListProducts;
@@ -43,6 +45,14 @@ Route::middleware('auth:sanctum')->group(function (): void {
     Route::get('me', ShowAccount::class);
     Route::patch('me', UpdateAccount::class);
     Route::put('me/password', ChangePassword::class);
+
+    Route::get('cart', [CartController::class, 'show']);
+    Route::delete('cart', [CartController::class, 'clear']);
+    Route::post('cart/items', [CartController::class, 'addItem']);
+    Route::patch('cart/items/{variantId}', [CartController::class, 'updateItem'])->whereUuid('variantId');
+    Route::delete('cart/items/{variantId}', [CartController::class, 'removeItem'])->whereUuid('variantId');
+    Route::put('cart/coupon', [CartController::class, 'applyCoupon']);
+    Route::delete('cart/coupon', [CartController::class, 'removeCoupon']);
 });
 
 // Store management: owner and staff only.
@@ -59,4 +69,6 @@ Route::prefix('admin')->middleware(['auth:sanctum', EnsureStoreManager::class])-
     Route::post('lots/{lot}/adjustments', [InventoryController::class, 'adjust'])->whereUuid('lot');
     Route::get('stock/expiring', [InventoryController::class, 'expiring']);
     Route::put('variants/{variant}/components', [KitController::class, 'update'])->whereUuid('variant');
+
+    Route::apiResource('coupons', CouponController::class)->except('show')->whereUuid('coupon');
 });

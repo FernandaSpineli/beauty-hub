@@ -24,7 +24,8 @@ return new class extends Migration
                 email_verified_at timestamptz,
                 created_at        timestamptz NOT NULL DEFAULT now(),
                 updated_at        timestamptz NOT NULL DEFAULT now(),
-                UNIQUE (tenant_id, email)
+                UNIQUE (tenant_id, email),
+                UNIQUE (tenant_id, id)
             )
             SQL);
         TenantIsolation::enable('users');
