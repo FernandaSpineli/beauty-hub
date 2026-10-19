@@ -22,6 +22,7 @@ use Illuminate\Support\Carbon;
  * @property int $min_shelf_life_days
  * @property string|null $stripe_account_id
  * @property bool $stripe_charges_enabled
+ * @property int $last_order_number
  * @property Carbon $created_at
  * @property Carbon $updated_at
  */
