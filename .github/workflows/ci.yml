@@ -53,8 +53,10 @@ jobs:
     env:
       DB_HOST: 127.0.0.1
       DB_PORT: 5432
-      DB_USERNAME: beauty
-      DB_PASSWORD: beauty
+      DB_USERNAME: beauty_app
+      DB_PASSWORD: beauty_app
+      DB_OWNER_USERNAME: beauty
+      DB_OWNER_PASSWORD: beauty
       REDIS_HOST: 127.0.0.1
       REDIS_PORT: 6379
     steps:
@@ -65,6 +67,10 @@ jobs:
           extensions: ${{ env.PHP_EXTENSIONS }}
           coverage: pcov
       - uses: ramsey/composer-install@v4
+      - name: Create the application database role
+        run: psql -h 127.0.0.1 -U beauty -d beauty_test -v ON_ERROR_STOP=1 -f docker/postgres/01-roles.sql
+        env:
+          PGPASSWORD: beauty
       - name: Prepare environment
         run: cp .env.example .env && php artisan key:generate
       - name: Test with coverage

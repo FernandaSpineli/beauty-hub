@@ -19,7 +19,7 @@ services:
     # Applies database migrations once, before the API starts.
     migrate:
         <<: *app
-        command: ["php", "artisan", "migrate", "--force"]
+        command: ["php", "artisan", "migrate", "--force", "--database=owner"]
         depends_on:
             postgres:
                 condition: service_healthy
