@@ -11,7 +11,7 @@ it('serves the store behind the subdomain', function (): void {
 
     $this->getJson($this->storeUrl('bella', 'store'))
         ->assertOk()
-        ->assertExactJson(['data' => ['slug' => 'bella', 'name' => 'Bella Cosméticos']]);
+        ->assertExactJson(['data' => ['slug' => 'bella', 'name' => 'Bella Cosméticos', 'theme_color' => '#b0476b']]);
 });
 
 it('answers 404 for a store that does not exist', function (): void {

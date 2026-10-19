@@ -2,10 +2,12 @@
 
 declare(strict_types=1);
 
+use App\Exceptions\ApiException;
 use App\Exceptions\ErrorEnvelope;
 use App\Http\Middleware\AssignRequestId;
 use App\Http\Middleware\EnsureStoreManager;
 use App\Http\Middleware\IdentifyTenant;
+use App\Http\Middleware\SecurityHeaders;
 use Illuminate\Contracts\Auth\Middleware\AuthenticatesRequests;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
@@ -23,6 +25,7 @@ return Application::configure(basePath: dirname(__DIR__))
     )
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->prepend(AssignRequestId::class);
+        $middleware->append(SecurityHeaders::class);
 
         // The store must be known before authentication (tokens are stored
         // per store) and before rate limiting (limits are keyed by store).
@@ -42,7 +45,10 @@ return Application::configure(basePath: dirname(__DIR__))
 
         $exceptions->render(function (Throwable $e, Request $request) {
             if (! $request->is('api/*') && ! $request->expectsJson()) {
-                return null;
+                // A page for an unknown or suspended store.
+                return $e instanceof ApiException
+                    ? response()->view('errors.store', ['status' => $e->status, 'title' => 'Beauty Hub'], $e->status)
+                    : null;
             }
 
             return ErrorEnvelope::render($e);

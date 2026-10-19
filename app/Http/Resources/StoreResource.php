@@ -21,6 +21,7 @@ final class StoreResource extends JsonResource
         return [
             'slug' => $this->slug,
             'name' => $this->name,
+            'theme_color' => $this->theme_color,
         ];
     }
 }

@@ -24,10 +24,11 @@ use Illuminate\Support\Carbon;
  * @property string|null $stripe_account_id
  * @property bool $stripe_charges_enabled
  * @property int $last_order_number
+ * @property string $theme_color
  * @property Carbon $created_at
  * @property Carbon $updated_at
  */
-#[Fillable(['slug', 'name', 'status', 'min_shelf_life_days'])]
+#[Fillable(['slug', 'name', 'status', 'min_shelf_life_days', 'theme_color'])]
 final class Tenant extends Model
 {
     /** @use HasFactory<TenantFactory> */
@@ -42,6 +43,7 @@ final class Tenant extends Model
         'status' => 'active',
         'min_shelf_life_days' => 30,
         'stripe_charges_enabled' => false,
+        'theme_color' => '#b0476b',
     ];
 
     /**

@@ -25,10 +25,11 @@ final readonly class StoreSettings
     {
         Gate::authorize('own-store');
 
-        /** @var array{name?: string, min_shelf_life_days?: int} $data */
+        /** @var array{name?: string, min_shelf_life_days?: int, theme_color?: string} $data */
         $data = $request->validate([
             'name' => ['sometimes', 'string', 'max:120'],
             'min_shelf_life_days' => ['sometimes', 'integer', 'min:0', 'max:365'],
+            'theme_color' => ['sometimes', 'string', 'regex:/\A#[0-9a-f]{6}\z/'],
         ]);
         $this->context->require()->update($data);
 
@@ -43,6 +44,7 @@ final readonly class StoreSettings
             'slug' => $store->slug,
             'name' => $store->name,
             'min_shelf_life_days' => $store->min_shelf_life_days,
+            'theme_color' => $store->theme_color,
         ]]);
     }
 }
