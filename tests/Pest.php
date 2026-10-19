@@ -57,3 +57,16 @@ function tokenFor(Tenant $store, UserRole $role = UserRole::Owner): string
 {
     return asStore($store, fn () => User::factory()->create(['role' => $role])->createToken('test')->plainTextToken);
 }
+
+/**
+ * A valid Brazilian shipping address for checkout requests.
+ *
+ * @return array<string, string>
+ */
+function address(array $overrides = []): array
+{
+    return [
+        'postal_code' => '01310-100', 'street' => 'Avenida Paulista', 'number' => '1578',
+        'district' => 'Bela Vista', 'city' => 'São Paulo', 'state' => 'SP', ...$overrides,
+    ];
+}

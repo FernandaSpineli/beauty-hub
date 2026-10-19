@@ -10,6 +10,8 @@ use App\Http\Controllers\Admin\CategoryController;
 use App\Http\Controllers\Admin\CouponController;
 use App\Http\Controllers\Admin\InventoryController;
 use App\Http\Controllers\Admin\KitController;
+use App\Http\Controllers\Admin\LotRecall;
+use App\Http\Controllers\Admin\OrderController as AdminOrderController;
 use App\Http\Controllers\Admin\ProductController;
 use App\Http\Controllers\Admin\VariantController;
 use App\Http\Controllers\Auth\ForgotPassword;
@@ -22,6 +24,7 @@ use App\Http\Controllers\Catalog\ListBrands;
 use App\Http\Controllers\Catalog\ListCategories;
 use App\Http\Controllers\Catalog\ListProducts;
 use App\Http\Controllers\Catalog\ShowProduct;
+use App\Http\Controllers\Orders\OrderController;
 use App\Http\Controllers\Store\ShowStore;
 use App\Http\Middleware\EnsureStoreManager;
 use Illuminate\Support\Facades\Route;
@@ -53,6 +56,11 @@ Route::middleware('auth:sanctum')->group(function (): void {
     Route::delete('cart/items/{variantId}', [CartController::class, 'removeItem'])->whereUuid('variantId');
     Route::put('cart/coupon', [CartController::class, 'applyCoupon']);
     Route::delete('cart/coupon', [CartController::class, 'removeCoupon']);
+
+    Route::get('orders', [OrderController::class, 'index']);
+    Route::post('orders', [OrderController::class, 'store']);
+    Route::get('orders/{order}', [OrderController::class, 'show'])->whereUuid('order');
+    Route::post('orders/{order}/cancel', [OrderController::class, 'cancel'])->whereUuid('order');
 });
 
 // Store management: owner and staff only.
@@ -71,4 +79,9 @@ Route::prefix('admin')->middleware(['auth:sanctum', EnsureStoreManager::class])-
     Route::put('variants/{variant}/components', [KitController::class, 'update'])->whereUuid('variant');
 
     Route::apiResource('coupons', CouponController::class)->except('show')->whereUuid('coupon');
+
+    Route::get('orders', [AdminOrderController::class, 'index']);
+    Route::get('orders/{order}', [AdminOrderController::class, 'show'])->whereUuid('order');
+    Route::patch('orders/{order}/status', [AdminOrderController::class, 'updateStatus'])->whereUuid('order');
+    Route::get('lots/{lot}/orders', LotRecall::class)->whereUuid('lot');
 });

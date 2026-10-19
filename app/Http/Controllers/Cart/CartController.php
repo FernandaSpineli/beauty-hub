@@ -90,7 +90,8 @@ final class CartController
         $coupon = Coupon::query()->where('code', mb_strtoupper(trim($data['code'])))->first()
             ?? throw new ApiException(422, 'COUPON_NOT_FOUND', 'This coupon does not exist.');
 
-        $problem = CouponRules::problem($coupon, CartQuote::for($cart)->subtotalCents);
+        $problem = CouponRules::problem($coupon, CartQuote::for($cart)->subtotalCents)
+            ?? CouponRules::usedUp($coupon, $this->customer($request));
         if ($problem !== null) {
             throw $problem;
         }
@@ -110,10 +111,15 @@ final class CartController
 
     private function cart(Request $request): Cart
     {
+        return Cart::for($this->customer($request));
+    }
+
+    private function customer(Request $request): User
+    {
         $user = $request->user();
         assert($user instanceof User);
 
-        return Cart::for($user);
+        return $user;
     }
 
     private function purchasable(string $variantId): ProductVariant

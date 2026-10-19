@@ -6,6 +6,8 @@ namespace App\Cart;
 
 use App\Exceptions\ApiException;
 use App\Models\Coupon;
+use App\Models\CouponRedemption;
+use App\Models\User;
 use Illuminate\Support\Carbon;
 
 /**
@@ -28,5 +30,22 @@ final class CouponRules
             ]),
             default => null,
         };
+    }
+
+    /**
+     * Whether this customer has already used the coupon as often as allowed.
+     * Redemptions of cancelled or expired orders are removed, so they do not
+     * count.
+     */
+    public static function usedUp(Coupon $coupon, User $customer): ?ApiException
+    {
+        $used = CouponRedemption::query()
+            ->where('coupon_id', $coupon->id)
+            ->where('user_id', $customer->id)
+            ->count();
+
+        return $used >= $coupon->max_per_customer
+            ? new ApiException(422, 'COUPON_ALREADY_USED', 'You have already used this coupon.')
+            : null;
     }
 }
