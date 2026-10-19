@@ -17,7 +17,7 @@ return [
     |
     */
 
-    'default' => env('CACHE_STORE', 'database'),
+    'default' => env('CACHE_STORE', 'redis'),
 
     /*
     |--------------------------------------------------------------------------
@@ -119,6 +119,10 @@ return [
     | that reason, you may prefix every cache key to avoid collisions.
     |
     */
+
+    // Upper bound on how stale the cached category tree and brand list can
+    // be; catalog writes clear them right away.
+    'catalog_ttl_seconds' => (int) env('CATALOG_CACHE_TTL_SECONDS', 600),
 
     'prefix' => env('CACHE_PREFIX', Str::slug((string) env('APP_NAME', 'laravel')).'-cache-'),
 

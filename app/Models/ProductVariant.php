@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Models;
 
+use App\Catalog\FlushesCatalogCache;
 use App\Tenancy\BelongsToTenant;
 use Database\Factories\ProductVariantFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
@@ -30,7 +31,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 final class ProductVariant extends Model
 {
     /** @use HasFactory<ProductVariantFactory> */
-    use BelongsToTenant, HasFactory, HasUuids;
+    use BelongsToTenant, FlushesCatalogCache, HasFactory, HasUuids;
 
     /**
      * @var array<string, mixed>

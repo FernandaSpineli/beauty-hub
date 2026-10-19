@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Models;
 
+use App\Catalog\FlushesCatalogCache;
 use App\Tenancy\BelongsToTenant;
 use Database\Factories\CategoryFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
@@ -25,7 +26,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 final class Category extends Model
 {
     /** @use HasFactory<CategoryFactory> */
-    use BelongsToTenant, HasFactory, HasUuids;
+    use BelongsToTenant, FlushesCatalogCache, HasFactory, HasUuids;
 
     /**
      * @return BelongsTo<Category, $this>
