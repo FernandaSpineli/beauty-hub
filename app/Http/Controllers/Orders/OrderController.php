@@ -34,8 +34,12 @@ final class OrderController
     }
 
     /**
-     * Idempotency-Key (optional, 8-100 chars): retrying the same request
-     * returns the order placed the first time.
+     * Place an order from the cart.
+     *
+     * Reserves stock (first-expiring lot first) and holds it until the
+     * order is paid or expires. Send an `Idempotency-Key` header (8-100
+     * characters): retrying with the same key returns the order placed the
+     * first time, with status 200 instead of 201.
      */
     public function store(PlaceOrderRequest $request, PlaceOrder $placeOrder): JsonResponse
     {
@@ -47,6 +51,11 @@ final class OrderController
         $address = $request->address();
         [$order, $created] = $placeOrder->handle($this->customer($request), $address, $key, hash('sha256', (string) json_encode($address)));
 
+        /**
+         * @status 201
+         *
+         * @body OrderResource
+         */
         return (new OrderResource($order->load(['items', 'history'])))
             ->response()
             ->setStatusCode($created ? 201 : 200);

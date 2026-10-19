@@ -1,6 +1,6 @@
 DEV := docker compose run --rm dev
 
-.PHONY: help up down logs shell install test cover lint fmt analyse
+.PHONY: help up down logs shell install test cover lint fmt docs seed
 
 help: ## Show available targets
 	@grep -E '^[a-z-]+:.*## ' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*## "} {printf "  %-10s %s\n", $$1, $$2}'
@@ -31,3 +31,9 @@ lint: ## Check formatting and run static analysis
 
 fmt: ## Format code with Pint
 	$(DEV) vendor/bin/pint
+
+docs: ## Regenerate docs/openapi.json from the code (Scramble)
+	$(DEV) php artisan scramble:export --path=docs/openapi.json
+
+seed: ## Create the two demo stores (bella, glow)
+	docker compose run --rm migrate php artisan demo:seed

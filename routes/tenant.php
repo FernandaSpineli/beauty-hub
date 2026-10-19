@@ -71,9 +71,13 @@ Route::middleware('auth:sanctum')->group(function (): void {
 
 // Store management: owner and staff only.
 Route::prefix('admin')->middleware(['auth:sanctum', EnsureStoreManager::class])->group(function (): void {
-    Route::apiResource('brands', BrandController::class)->except('show')->whereUuid('brand');
-    Route::apiResource('categories', CategoryController::class)->except('show')->whereUuid('category');
-    Route::apiResource('products', ProductController::class)->except('destroy')->whereUuid('product');
+    // Updates are partial: PATCH only.
+    Route::apiResource('brands', BrandController::class)->only(['index', 'store', 'destroy'])->whereUuid('brand');
+    Route::patch('brands/{brand}', [BrandController::class, 'update'])->whereUuid('brand');
+    Route::apiResource('categories', CategoryController::class)->only(['index', 'store', 'destroy'])->whereUuid('category');
+    Route::patch('categories/{category}', [CategoryController::class, 'update'])->whereUuid('category');
+    Route::apiResource('products', ProductController::class)->only(['index', 'store', 'show'])->whereUuid('product');
+    Route::patch('products/{product}', [ProductController::class, 'update'])->whereUuid('product');
     Route::post('products/{product}/variants', [VariantController::class, 'store'])->whereUuid('product');
     Route::patch('variants/{variant}', [VariantController::class, 'update'])->whereUuid('variant');
     Route::delete('variants/{variant}', [VariantController::class, 'destroy'])->whereUuid('variant');
@@ -84,7 +88,8 @@ Route::prefix('admin')->middleware(['auth:sanctum', EnsureStoreManager::class])-
     Route::get('stock/expiring', [InventoryController::class, 'expiring']);
     Route::put('variants/{variant}/components', [KitController::class, 'update'])->whereUuid('variant');
 
-    Route::apiResource('coupons', CouponController::class)->except('show')->whereUuid('coupon');
+    Route::apiResource('coupons', CouponController::class)->only(['index', 'store', 'destroy'])->whereUuid('coupon');
+    Route::patch('coupons/{coupon}', [CouponController::class, 'update'])->whereUuid('coupon');
 
     Route::get('orders', [AdminOrderController::class, 'index']);
     Route::get('orders/{order}', [AdminOrderController::class, 'show'])->whereUuid('order');

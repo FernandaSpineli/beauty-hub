@@ -13,6 +13,7 @@
     "license": "MIT",
     "require": {
         "php": "^8.5",
+        "dedoc/scramble": "^0.13",
         "laravel/framework": "^13.17",
         "laravel/horizon": "^5.50",
         "laravel/sanctum": "^4.3",
