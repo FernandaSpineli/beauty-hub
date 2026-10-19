@@ -1,0 +1,102 @@
+name: beauty-hub
+
+# Credentials below are for local development only.
+x-app: &app
+    build:
+        context: .
+        target: prod
+    image: beauty-hub:dev
+    env_file: .env
+    environment:
+        DB_HOST: postgres
+        DB_PORT: 5432
+        REDIS_HOST: redis
+        REDIS_PORT: 6379
+        MAIL_HOST: mailpit
+        MAIL_PORT: 1025
+
+services:
+    # Applies database migrations once, before the API starts.
+    migrate:
+        <<: *app
+        command: ["php", "artisan", "migrate", "--force"]
+        depends_on:
+            postgres:
+                condition: service_healthy
+        restart: "no"
+
+    app:
+        <<: *app
+        ports:
+            - "${FORWARD_APP_PORT:-8000}:8000"
+        depends_on:
+            migrate:
+                condition: service_completed_successfully
+            redis:
+                condition: service_healthy
+        healthcheck:
+            test: ["CMD", "wget", "-qO-", "http://127.0.0.1:8000/up"]
+            interval: 10s
+            timeout: 3s
+            retries: 5
+        restart: unless-stopped
+
+    # Composer, tests and static analysis against the mounted source:
+    #   docker compose run --rm dev composer install
+    dev:
+        build:
+            context: .
+            target: dev
+        image: beauty-hub:tools
+        profiles: ["dev"]
+        user: "${UID:-1000}:${GID:-1000}"
+        volumes:
+            - .:/app
+        environment:
+            DB_HOST: postgres
+            DB_PORT: 5432
+            REDIS_HOST: redis
+            REDIS_PORT: 6379
+            MAIL_HOST: mailpit
+            MAIL_PORT: 1025
+        depends_on:
+            postgres:
+                condition: service_healthy
+            redis:
+                condition: service_healthy
+
+    # Catches every email the app sends: http://localhost:8025
+    mailpit:
+        image: axllent/mailpit:v1.31.6
+        ports:
+            - "${FORWARD_MAILPIT_UI_PORT:-8025}:8025"
+
+    postgres:
+        image: postgres:18-alpine
+        environment:
+            POSTGRES_USER: beauty
+            POSTGRES_PASSWORD: beauty
+            POSTGRES_DB: beauty
+        ports:
+            - "${FORWARD_DB_PORT:-5432}:5432"
+        volumes:
+            - pgdata:/var/lib/postgresql
+            - ./docker/postgres:/docker-entrypoint-initdb.d:ro
+        healthcheck:
+            test: ["CMD-SHELL", "pg_isready -U beauty -d beauty"]
+            interval: 5s
+            timeout: 3s
+            retries: 10
+
+    redis:
+        image: redis:8-alpine
+        ports:
+            - "${FORWARD_REDIS_PORT:-6379}:6379"
+        healthcheck:
+            test: ["CMD", "redis-cli", "ping"]
+            interval: 5s
+            timeout: 3s
+            retries: 10
+
+volumes:
+    pgdata:
