@@ -5,12 +5,17 @@ declare(strict_types=1);
 use App\Http\Controllers\Account\ChangePassword;
 use App\Http\Controllers\Account\ShowAccount;
 use App\Http\Controllers\Account\UpdateAccount;
+use App\Http\Controllers\Admin\BrandController;
+use App\Http\Controllers\Admin\CategoryController;
+use App\Http\Controllers\Admin\ProductController;
+use App\Http\Controllers\Admin\VariantController;
 use App\Http\Controllers\Auth\ForgotPassword;
 use App\Http\Controllers\Auth\Login;
 use App\Http\Controllers\Auth\Logout;
 use App\Http\Controllers\Auth\Register;
 use App\Http\Controllers\Auth\ResetPassword;
 use App\Http\Controllers\Store\ShowStore;
+use App\Http\Middleware\EnsureStoreManager;
 use Illuminate\Support\Facades\Route;
 
 Route::get('store', ShowStore::class);
@@ -27,4 +32,14 @@ Route::middleware('auth:sanctum')->group(function (): void {
     Route::get('me', ShowAccount::class);
     Route::patch('me', UpdateAccount::class);
     Route::put('me/password', ChangePassword::class);
+});
+
+// Store management: owner and staff only.
+Route::prefix('admin')->middleware(['auth:sanctum', EnsureStoreManager::class])->group(function (): void {
+    Route::apiResource('brands', BrandController::class)->except('show')->whereUuid('brand');
+    Route::apiResource('categories', CategoryController::class)->except('show')->whereUuid('category');
+    Route::apiResource('products', ProductController::class)->except('destroy')->whereUuid('product');
+    Route::post('products/{product}/variants', [VariantController::class, 'store'])->whereUuid('product');
+    Route::patch('variants/{variant}', [VariantController::class, 'update'])->whereUuid('variant');
+    Route::delete('variants/{variant}', [VariantController::class, 'destroy'])->whereUuid('variant');
 });

@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use App\Enums\UserRole;
 use App\Models\Tenant;
 use App\Models\User;
 use App\Tenancy\TenantContext;
@@ -47,4 +48,12 @@ function asStore(Tenant $store, callable $callback): mixed
 function storeUser(Tenant $store, array $attributes = []): User
 {
     return asStore($store, fn () => User::factory()->create($attributes));
+}
+
+/**
+ * Creates a user with the given role at the store and returns an API token.
+ */
+function tokenFor(Tenant $store, UserRole $role = UserRole::Owner): string
+{
+    return asStore($store, fn () => User::factory()->create(['role' => $role])->createToken('test')->plainTextToken);
 }
