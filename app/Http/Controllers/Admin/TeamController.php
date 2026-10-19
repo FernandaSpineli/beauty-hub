@@ -10,6 +10,7 @@ use App\Http\Resources\UserResource;
 use App\Models\User;
 use App\Notifications\TeamInvitationNotification;
 use App\Stores\TeamRoles;
+use Illuminate\Auth\Passwords\PasswordBroker;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
@@ -60,7 +61,9 @@ final class TeamController
         $member->save();
 
         $inviter = $this->actor($request);
-        $member->notify(new TeamInvitationNotification(Password::broker()->createToken($member), $inviter->name));
+        $broker = Password::broker();
+        assert($broker instanceof PasswordBroker);
+        $member->notify(new TeamInvitationNotification($broker->createToken($member), $inviter->name));
 
         return (new UserResource($member))->response()->setStatusCode(201);
     }
