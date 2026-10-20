@@ -6,6 +6,28 @@ for (const chip of document.querySelectorAll(".store-chip")) {
 
 const form = document.getElementById("signup");
 const result = document.getElementById("signup-result");
+const preview = document.getElementById("preview");
+
+// Suggest an address from the store's name until the owner types one, and
+// show where the store will live.
+const nameInput = form.elements.namedItem("name");
+const slugInput = form.elements.namedItem("slug");
+let slugEdited = false;
+const slugify = (text) => text.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase()
+  .replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 40);
+const showPreview = () => {
+  const strong = document.createElement("strong");
+  strong.textContent = `${slugInput.value || "minhaloja"}.${preview.dataset.suffix}`;
+  preview.replaceChildren("Sua loja vai abrir em ", strong);
+};
+nameInput.addEventListener("input", () => {
+  if (!slugEdited) slugInput.value = slugify(nameInput.value);
+  showPreview();
+});
+slugInput.addEventListener("input", () => {
+  slugEdited = slugInput.value !== "";
+  showPreview();
+});
 
 form.addEventListener("submit", async (event) => {
   event.preventDefault();

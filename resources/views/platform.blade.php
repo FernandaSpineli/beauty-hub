@@ -39,6 +39,7 @@
                 <label>Endereço
                     <span class="slug-field"><input name="slug" required pattern="[a-z0-9][a-z0-9-]{1,38}[a-z0-9]" placeholder="minhaloja" autocapitalize="none" spellcheck="false"><span>.{{ config('tenancy.central_domain') }}</span></span>
                 </label>
+                <p class="preview" id="preview" data-suffix="{{ $suffix }}" aria-live="polite">Sua loja vai abrir em <strong>minhaloja.{{ $suffix }}</strong></p>
                 <label>Seu nome <input name="owner_name" required maxlength="120" autocomplete="name"></label>
                 <label>Seu e-mail <input name="owner_email" type="email" required autocomplete="email"></label>
                 <label>Senha <input name="password" type="password" required minlength="8" autocomplete="new-password"></label>
