@@ -120,6 +120,21 @@ function swatch(hex, name) {
   return dot;
 }
 
+// A product's look: its photo if it has one; otherwise its shades swatched
+// as strokes, or a dab of cream for products without shades.
+function art(product, shades) {
+  const box = h("div", { class: "art", "aria-hidden": "true" });
+  if (product.image_url) box.append(h("img", { src: product.image_url, alt: "" }));
+  else if (shades.length) {
+    box.append(h("div", { class: "strokes" }, shades.map((s) => {
+      const stroke = h("span", { class: "stroke", "data-hex": s.hex });
+      stroke.style.setProperty("--shade", s.hex);
+      return stroke;
+    })));
+  } else box.append(h("div", { class: "dab" }));
+  return box;
+}
+
 function formToObject(form) {
   return Object.fromEntries(new FormData(form).entries());
 }
@@ -256,7 +271,11 @@ async function catalogPage() {
     ? h("ul", { class: "grid" }, products.data.map(productCard))
     : notice("Nenhum produto encontrado.");
 
-  render(h("h1", {}, store.name), filters, grid, pager(products.meta, params));
+  render(
+    h("header", { class: "intro" },
+      h("h1", {}, store.name),
+      h("p", {}, "Maquiagem e cuidados com a pele. A validade do lote que você vai receber aparece antes da compra.")),
+    filters, grid, pager(products.meta, params));
 }
 
 function checkbox(name, label, params) {
@@ -264,13 +283,12 @@ function checkbox(name, label, params) {
 }
 
 function productCard(p) {
-  return h("li", { class: `card product ${p.in_stock ? "" : "dim"}` },
+  return h("li", { class: `product ${p.in_stock ? "" : "dim"}` },
     link(`/produto/${p.slug}`,
-      p.image_url ? h("img", { src: p.image_url, alt: "" }) : h("div", { class: "placeholder", "aria-hidden": "true" }, p.name[0]),
-      h("span", { class: "muted small" }, p.brand.name),
-      h("strong", {}, p.name),
-      h("span", {}, `a partir de ${brl(p.from_price_cents)}`),
-      p.shades.length ? h("span", { class: "swatches" }, p.shades.map((s) => swatch(s.hex, s.name))) : null,
+      art(p, p.shades),
+      h("span", { class: "maker" }, p.brand.name),
+      h("span", { class: "name" }, p.name),
+      h("span", { class: "from" }, p.shades.length > 1 ? `${p.shades.length} tons, a partir de ` : "a partir de ", h("strong", {}, brl(p.from_price_cents))),
       h("span", { class: "tags" }, p.is_vegan ? h("span", { class: "tag" }, "vegano") : null,
         p.is_cruelty_free ? h("span", { class: "tag" }, "cruelty-free") : null,
         p.in_stock ? null : h("span", { class: "tag warn" }, "esgotado")),
@@ -281,9 +299,9 @@ function pager(meta, params) {
   if (meta.last_page <= 1) return null;
   const page = (n) => { const q = new URLSearchParams(params); q.set("page", n); return `/?${q}`; };
   return h("nav", { class: "pager", "aria-label": "Páginas" },
-    meta.current_page > 1 ? link(page(meta.current_page - 1), "← Anterior") : null,
+    meta.current_page > 1 ? link(page(meta.current_page - 1), "Anterior") : null,
     h("span", {}, `Página ${meta.current_page} de ${meta.last_page}`),
-    meta.current_page < meta.last_page ? link(page(meta.current_page + 1), "Próxima →") : null);
+    meta.current_page < meta.last_page ? link(page(meta.current_page + 1), "Próxima") : null);
 }
 
 async function productPage(slug) {
@@ -291,6 +309,7 @@ async function productPage(slug) {
   let selected = p.variants.find((v) => v.in_stock) ?? p.variants[0];
 
   const detail = h("div", { class: "variant-detail" });
+  const look = art(p, p.variants.filter((v) => v.shade_hex).map((v) => ({ hex: v.shade_hex, name: v.name })));
   const quantity = h("input", { type: "number", min: "1", max: "20", value: "1", "aria-label": "Quantidade" });
   const add = h("button", { class: "btn", type: "button" }, "Adicionar ao carrinho");
   const message = h("div");
@@ -298,19 +317,23 @@ async function productPage(slug) {
   const choose = (variant) => {
     selected = variant;
     for (const b of shades.querySelectorAll("button")) b.setAttribute("aria-pressed", b.dataset.id === variant.id);
-    const price = [h("strong", { class: "price" }, brl(variant.price_cents))];
+    for (const s of look.querySelectorAll(".stroke")) s.classList.toggle("picked", s.dataset.hex === variant.shade_hex);
+    const price = [h("span", { class: "price" }, brl(variant.price_cents))];
     if (variant.compare_at_price_cents) price.push(h("s", { class: "muted" }, brl(variant.compare_at_price_cents)));
-    detail.replaceChildren(
-      h("p", {}, ...price),
+    detail.replaceChildren(...present([
+      h("p", { class: "price-line" }, ...price),
       variant.in_stock
-        ? h("p", { class: "muted" }, variant.low_stock ? "Últimas unidades. " : "Em estoque. ",
-            variant.ships_with_expiry ? `Validade do lote enviado: ${variant.ships_with_expiry.split("-").reverse().join("/")}.` : "")
-        : h("p", { class: "warn-text" }, "Esgotado."));
+        ? h("p", { class: "stock-note" }, variant.low_stock ? "Últimas unidades em estoque." : "Em estoque.")
+        : h("p", { class: "warn-text" }, "Esgotado."),
+      variant.in_stock && variant.ships_with_expiry
+        ? h("p", { class: "stamp" }, "Validade do lote que vamos enviar", h("strong", {}, variant.ships_with_expiry.split("-").reverse().join("/")))
+        : null,
+    ]));
     add.disabled = !variant.in_stock;
   };
 
   const shades = h("div", { class: "shade-picker", role: "group", "aria-label": "Tons e tamanhos" },
-    p.variants.map((v) => h("button", { type: "button", class: "shade", "data-id": v.id, onclick: () => choose(v), disabled: false },
+    p.variants.map((v) => h("button", { type: "button", class: "shade", "data-id": v.id, onclick: () => choose(v) },
       v.shade_hex ? swatch(v.shade_hex, v.name) : null, v.name, v.in_stock ? null : " (esgotado)")));
 
   add.addEventListener("click", async () => {
@@ -318,19 +341,20 @@ async function productPage(slug) {
     message.replaceChildren();
     try {
       await api("POST", "/cart/items", { body: { variant_id: selected.id, quantity: Number(quantity.value) } });
-      message.append(notice("Adicionado ao carrinho. ", "ok"), link("/carrinho", "Ver carrinho →"));
+      message.append(notice("Adicionado ao carrinho.", "ok"), h("p", {}, link("/carrinho", "Ver carrinho")));
     } catch (error) {
       message.append(notice(error.message, "error"));
     }
   });
 
   render(
-    link("/", "← Produtos"),
+    h("a", { href: "/", "data-link": true, class: "back" }, "Todos os produtos"),
     h("article", { class: "product-page" },
+      look,
       h("div", {},
-        h("p", { class: "muted" }, `${p.brand.name} · ${p.category.name}`),
+        h("p", { class: "kicker" }, `${p.brand.name}, ${p.category.name.toLowerCase()}`),
         h("h1", {}, p.name),
-        h("p", {}, p.description),
+        p.description ? h("p", {}, p.description) : null,
         shades, detail,
         h("p", { class: "buy" }, quantity, add), message,
         h("dl", { class: "facts" },
@@ -379,7 +403,7 @@ async function cartPage() {
     h("table", { class: "lines" }, h("tbody", {}, rows)),
     coupon,
     totals(cart),
-    cart.can_checkout ? link("/checkout", h("span", { class: "btn" }, "Finalizar compra"))
+    cart.can_checkout ? h("p", { class: "cta" }, h("a", { href: "/checkout", "data-link": true, class: "btn" }, "Finalizar compra"))
       : notice("Ajuste os itens marcados para finalizar.", "error"),
   );
 }
@@ -406,7 +430,7 @@ async function checkoutPage() {
     h("label", {}, "Complemento", h("input", { name: "complement" })),
     field("district", "Bairro"), field("city", "Cidade"),
     h("label", {}, "UF", h("select", { name: "state", required: true }, UF.map((uf) => h("option", { value: uf, selected: uf === "SP" }, uf)))),
-    h("button", { class: "btn", type: "submit" }, `Fechar pedido — ${brl(cart.total_cents)}`),
+    h("button", { class: "btn", type: "submit" }, `Fechar pedido de ${brl(cart.total_cents)}`),
   ), async (address) => {
     if (!address.complement) delete address.complement;
     const { data: order } = await api("POST", "/orders", { body: { shipping_address: address }, headers: { "Idempotency-Key": idempotencyKey } });
@@ -456,7 +480,7 @@ async function orderPage(id) {
   }
 
   render(
-    link("/pedidos", "← Meus pedidos"),
+    h("a", { href: "/pedidos", "data-link": true, class: "back" }, "Meus pedidos"),
     h("h1", {}, `Pedido ${order.reference}`),
     h("p", {}, h("span", { class: `status ${order.status}` }, STATUS[order.status]),
       order.status === "pending_payment" ? ` · reserva até ${new Date(order.expires_at).toLocaleString("pt-BR")}` : null),
@@ -556,7 +580,8 @@ async function adminPage() {
 }
 
 function adminTabs() {
-  return h("nav", { class: "tabs" }, link("/admin", "Resumo"), link("/admin/estoque", "Validade"), link("/admin/pagamentos", "Pagamentos"));
+  const tab = (href, label) => h("a", { href, "data-link": true, "aria-current": location.pathname === href ? "page" : null }, label);
+  return h("nav", { class: "tabs", "aria-label": "Painel" }, tab("/admin", "Resumo"), tab("/admin/estoque", "Validade"), tab("/admin/pagamentos", "Pagamentos"));
 }
 
 async function adminOrderPage(id) {

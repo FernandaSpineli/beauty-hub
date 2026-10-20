@@ -16,7 +16,7 @@
         <p class="muted">Carregando…</p>
     </main>
     <footer class="foot">
-        {{ $store['name'] }} · loja de demonstração do <a href="{{ config('app.url') }}">Beauty Hub</a>.
-        Cada chamada à API aparece no console do navegador.
+        {{ $store['name'] }} é uma loja de demonstração do <a href="{{ config('app.url') }}">Beauty Hub</a>.
+        As chamadas à API aparecem no console do navegador.
     </footer>
 @endsection
